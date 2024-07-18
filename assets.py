@@ -1,7 +1,7 @@
 from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from typing import List
-from pygame import Vector2
+import pygame
 
 
 class Suit(int, Enum):
@@ -40,17 +40,46 @@ class Card(BaseModel):
     def color(self) -> Color:
         return Color(self.suit % 2)
 
+    def draw(self, screen: pygame.Surface, position: pygame.Rect):
+        pygame.draw.rect(
+            screen,
+            "white",
+            position,
+            border_radius=7,
+        )
+
+        pygame.draw.rect(screen, "black", position, width=5, border_radius=7)
+
 
 class CardCluster(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     cards: List[Card]
-    reveal: bool
-    position: Vector2
+    # reveal: bool = True
+    position: pygame.Vector2
+
+    def draw(self, screen: pygame.Surface):
+        for i, card in enumerate(self.cards):
+            card.draw(
+                screen, pygame.Rect(self.position.x, self.position.y + 25 * i, 250, 350)
+            )
+        #     pygame.draw.rect(
+        #         screen,
+        #         "white",
+        #         rect,
+        #         border_radius=7,
+        #     )
+        # pygame.draw.rect(
+        #     screen,
+        #     "black",
+        #     box,
+        #     width=5,
+        #     border_radius=7,
+        # )
+
 
 class CardPosition(BaseModel):
     cluster: List[CardCluster]
-    
 
 
 if __name__ == "__main__":
