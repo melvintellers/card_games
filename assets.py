@@ -40,28 +40,76 @@ class Card(BaseModel):
     def color(self) -> Color:
         return Color(self.suit % 2)
 
-    def draw(self, screen: pygame.Surface, position: pygame.Rect):
+    def draw(self, screen: pygame.Surface, rect: pygame.Rect, font):
+
         pygame.draw.rect(
             screen,
             "white",
-            position,
+            rect,
             border_radius=7,
         )
 
-        pygame.draw.rect(screen, "black", position, width=5, border_radius=7)
+        pygame.draw.rect(
+            screen,
+            "black",
+            rect,
+            width=5,
+            border_radius=7,
+        )
+
+        screen.blit(
+            font.render(f"{self.rank.name} - {self.suit.name}", True, (255, 0, 0)),
+            (rect.x + 25, rect.y + 25),
+        )
 
 
 class CardCluster(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     cards: List[Card]
+    rects: List[pygame.Rect] = []
     # reveal: bool = True
     position: pygame.Vector2
 
-    def draw(self, screen: pygame.Surface):
-        for i, card in enumerate(self.cards):
+    def update_rects(self):
+        if len(self.rects) != len(self.cards):
+            self.rects = [
+                pygame.Rect(self.position.x, self.position.y + 50 * i, 250, 350)
+                for i in range(len(self.cards))
+            ]
+            # print(self.rects)
+
+        else:
+            for i, rect in enumerate(self.rects):
+                rect.x, rect.y = self.position.x, self.position.y + 50 * i
+
+    def split(self, index: int) -> "CardCluster":
+        new_cluster = CardCluster(
+            cards=self.cards[index:],
+            position=pygame.Vector2(
+                self.rects[index].x,
+                self.rects[index].y,
+            ),
+        )
+        self.cards = self.cards[:index]
+
+        self.update_rects()
+        new_cluster.update_rects()
+
+        return new_cluster
+
+    def join(self, cluster: "CardCluster") -> None:
+        self.cards.extend(cluster.cards)
+        self.update_rects()
+
+    def draw(self, screen: pygame.Surface, font):
+        self.update_rects()
+
+        for i, (card, rect) in enumerate(zip(self.cards, self.rects)):
             card.draw(
-                screen, pygame.Rect(self.position.x, self.position.y + 25 * i, 250, 350)
+                screen,
+                rect,
+                font,
             )
         #     pygame.draw.rect(
         #         screen,
